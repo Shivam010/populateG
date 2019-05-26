@@ -22,6 +22,9 @@ For more info, visit: <a href="https://github.com/Shivam010/populateg">github.co
 }
 
 func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// oauth2 state string randomisation
+	oauthStateString = RandomString(10)
+
 	url := config.AuthCodeURL(oauthStateString)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
