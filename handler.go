@@ -105,3 +105,10 @@ Try Again <a href="/login">Log In</a>
 		log.Fatalf("error on welcome page: %v", err)
 	}
 }
+
+func googleVerification(w http.ResponseWriter, r *http.Request, _ httprouter.Params)  {
+	if _, err := fmt.Fprintf(w, `google-site-verification: googleccd40724f8c32619.html`); err != nil {
+		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		log.Fatalf("error on welcome page: %v", err)
+	}
+}
