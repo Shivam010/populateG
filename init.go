@@ -36,7 +36,7 @@ func init() {
 	PORT = os.Getenv("PORT")
 
 	config = &oauth2.Config{
-		RedirectURL:  "http://" + HostURL + "/home",
+		RedirectURL:  "https://" + HostURL + "/home",
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
 		Scopes: []string{
