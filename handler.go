@@ -12,6 +12,8 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 <body>
 Welcome to PopulateG | A Plugin To Populate Google Docs Template <br> <a href="/login">Log In</a>
 </body>
+<br>
+For more info, visit: <a href="https://github.com/Shivam010/populateg">github.com/Shivam010</a>
 </html>`)
 	if err != nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
@@ -54,6 +56,8 @@ Hi %v, welcome to PopulateG | A Plugin To Populate Google Docs Template
 		<input type="number" name="cols" min="1"> <br>
 	<input type="submit" value="Submit">
 </form>
+<br>
+For more info, visit: <a href="https://github.com/Shivam010/populateg">github.com/Shivam010</a>
 </body>
 </html>`, per.Name); err != nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
@@ -81,6 +85,8 @@ Try Again.
 		<input type="number" name="cols" min="1"> <br>
 	<input type="submit" value="Submit">
 </form>
+<br>
+For more info, visit: <a href="https://github.com/Shivam010/populateg">github.com/Shivam010</a>
 </body>
 </html>`, err.Error()); err != nil {
 			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
@@ -94,6 +100,8 @@ Try Again.
 Error: %v <br>
 Try Again <a href="/login">Log In</a>
 </body>
+<br>
+For more info, visit: <a href="https://github.com/Shivam010/populateg">github.com/Shivam010</a>
 </html>`, err.Error()); err != nil {
 			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 			log.Fatalf("error on welcome page: %v", err)
