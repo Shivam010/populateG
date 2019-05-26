@@ -15,6 +15,7 @@ const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789"
 
 var (
+	PORT             string
 	seed             *rand.Rand
 	client           *http.Client
 	config           *oauth2.Config
@@ -32,9 +33,10 @@ func init() {
 	HostURL := os.Getenv("POPULATE_HOST_URL")
 	ClientID := os.Getenv("GOOGLE_CLIENT_ID")
 	ClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	PORT = os.Getenv("PORT")
 
 	config = &oauth2.Config{
-		RedirectURL: "http://" + HostURL + "/",
+		RedirectURL:  "http://" + HostURL + "/",
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
 		Scopes: []string{
