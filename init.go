@@ -34,7 +34,7 @@ func init() {
 	ClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
 
 	config = &oauth2.Config{
-		RedirectURL: "http://" + HostURL + "/home",
+		RedirectURL: "http://" + HostURL + "/",
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
 		Scopes: []string{
