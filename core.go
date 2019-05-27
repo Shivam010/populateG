@@ -139,6 +139,9 @@ func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, mp SheetData) err
 	dsrv := docs.NewDocumentsService(srv)
 	drs := make([]*docs.Request, 0, len(mp))
 	for k, v := range mp {
+		if len(v) <= int(ind) {
+			continue
+		}
 		drs = append(drs, &docs.Request{
 			ReplaceAllText: &docs.ReplaceAllTextRequest{
 				ContainsText: &docs.SubstringMatchCriteria{
@@ -161,7 +164,7 @@ func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, mp SheetData) err
 	}
 	return fmt.Errorf("something went wrong")
 }
-//4QRsE2lP92
+
 func (p *PopulateObject) Process() error {
 	p.Entries++
 	mp, err := p.GetSheetData(p.SheetID)
