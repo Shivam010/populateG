@@ -15,6 +15,11 @@ As shown in above gif, to create template, you have to tag your document with th
 
 Like, if the header is **`name`**, then use **`{{name}}`** as the tag.
 
+## Run Locally
+Just, setup GoLang in your system.<br>
+And Run `go get github.com/Shivam010/populateG` or just clone the repo. Now, run `go run .` in the project.<br>
+_If in $GOPATH use `GO111MODULE=on go run .`_
+
 ## Request for Contribution
 Changes and improvements are more than welcome! 
 
