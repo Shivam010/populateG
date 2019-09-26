@@ -1,0 +1,32 @@
+{{define "home"}}
+
+{{if .Name}}
+  <div class="flash my-2">
+  Hi {{.Name}}
+  </div>
+{{end}}
+
+{{range $s := .Success}}
+  <div class="flash flash-success my-2">{{$s}}</div>
+{{end}}
+
+{{range $e := .Errors}}
+  <div class="flash flash-error my-2">{{$e}}</div>
+{{end}}
+
+<form action="/process" method="post">
+  <label for="google docs template URL">Google Docs Template URL</label><br>
+  <input class="form-control input-lg mb-3" type="text" name="docID" required placeholder="https://docs.google.com/..."><br>
+
+  <label for="google sheets data URL">Google Sheets Data URL</label><br>
+  <input class="form-control input-lg mb-3" type="text" name="sheetID" required placeholder="https://docs.google.com/..."><br>
+
+  <label for="number of rows">No. of Entries in Sheet</label><br>
+  <input class="form-control mb-3" type="number" name="ent" min="1" required placeholder="a number"> <br>
+
+  <label for="number of columns">No. of Columns (or tags) in the sheet</label><br>
+  <input class="form-control mb-3" type="number" name="cols" min="1" required placeholder="a number"> <br>
+
+  <button class="btn btn-outline mt-2" role="button" type="submit">Submit</button>
+</form>
+{{end}}

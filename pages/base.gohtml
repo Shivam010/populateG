@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>populateG</title>
+  <link href="https://unpkg.com/primer/build/build.css" rel="stylesheet" />
+</head>
+
+<body>
+  <header class="d-flex bg-grey flex-column bg-gray-dark p-2">
+    <h1 class="text-white">PopulateG</h1>
+    <h4 class="text-white">A Plugin to populate Google Docs Templates</h4>
+  </header>
+
+  <main class="p-3">
+  {{if .Authenticated}}
+    {{template "home" .}}
+  {{else}}
+    <a class="btn btn-outline btn-large" href="/login" role="button">Log In</a>
+  {{end}}
+  </main>
+
+  <footer class="p-3">
+  For more info, visit <a href="https://github.com/Shivam010/populateg">github.com/Shivam010/populateg</a>
+  </footer>
+</body>
+
+</html>
