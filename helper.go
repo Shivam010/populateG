@@ -16,3 +16,10 @@ type Person struct {
 	Name  string
 	Email string
 }
+
+type ViewData struct {
+	Authenticated bool
+	Name          string
+	Errors        []string
+	Success       []string
+}
