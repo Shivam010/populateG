@@ -2,18 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
-	var err error
-	tmpl, err = tmpl.ParseFiles("pages/base.gohtml", "pages/home.gohtml")
-	if err != nil {
-		log.Fatalf("failed to parse template: %v", err)
-	}
-
 	// Initialize a router as usual
 	router := httprouter.New()
 	// Welcome screen

@@ -28,6 +28,12 @@ var (
 )
 
 func init() {
+	var err error
+	tmpl, err = template.ParseFiles("pages/base.gohtml", "pages/form.gohtml")
+	if err != nil {
+		log.Fatalf("failed to parse template: %v", err)
+	}
+
 	log.SetFlags(0)
 	// Randomised seed
 	seed = rand.New(rand.NewSource(time.Now().UnixNano()))
