@@ -60,7 +60,7 @@ func init() {
 	}
 
 	config = &oauth2.Config{
-		RedirectURL:  "http://" + HostURL + "/",
+		RedirectURL:  "https://" + HostURL + "/",
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
 		Scopes: []string{
