@@ -15,17 +15,35 @@
     <h4 class="text-white">A Plugin to populate Google Docs Templates</h4>
   </header>
 
-  <main class="p-3">
-  {{if .Authenticated}}
-    {{template "home" .}}
-  {{else}}
-    <a class="btn btn-outline btn-large" href="/login" role="button">Log In</a>
+  {{if .Name}}
+    <div class="flash m-3">
+    Hi {{.Name}}
+    </div>
   {{end}}
-  </main>
 
-  <footer class="p-3">
-  For more info, visit <a href="https://github.com/Shivam010/populateg">github.com/Shivam010/populateg</a>
-  </footer>
+  {{range $s := .Success}}
+    <div class="flash flash-success m-3">{{$s}}</div>
+  {{end}}
+
+  {{range $e := .Errors}}
+    <div class="flash flash-error m-3">{{$e}}</div>
+  {{end}}
+
+  <div class="d-flex flex-items-center flex-justify-center" style="height:75vh;">
+    <div class="d-flex flex-column flex-items-center flex-justify-between border border-grey-dark" style="height:50vh;width:600px;">
+      <main>
+      {{if .Authenticated}}
+        {{template "form" .}}
+      {{else}}
+        <a class="btn btn-outline btn-large mt-6" href="/login" role="button">Log In</a>
+      {{end}}
+      </main>
+
+      <footer class="p-3">
+      For more info, visit <a href="https://github.com/Shivam010/populateg">github.com/Shivam010/populateg</a>
+      </footer>
+    </div>
+  </div>
 </body>
 
 </html>
