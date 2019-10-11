@@ -48,16 +48,37 @@ func CallbackHome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 <body>
 Hi %v, welcome to PopulateG | A Plugin To Populate Google Docs Template
 <br>
+<style type="text/css">
+	.inp{
+		width:200px;
+		padding:4px 8px;
+		margin:3px;
+		border:none;
+		border-bottom:1px solid #ffffff;
+		outline:none;
+		background:none;
+			
+	}
+	.inp:hover{
+		border-bottom:1px solid #4fb4df;
+	}
+	.btn{
+		border-radius:50px;
+		padding:5px 12px;
+		background:none;
+		border:1px solid #4fb4df;
+	}
+</style>
 <form action="/process" method="post">
 	Google Docs Template Url: <br>
-		<input type="text" name="docID"> <br>
+		<input class="inp" type="text" name="docID"> <br>
 	Google Sheets Data Url: <br>
-		<input type="text" name="sheetID"> <br>
+		<input class="inp" type="text" name="sheetID"> <br>
 	No. of Entries in Sheet, for which Doc is to generate: <br>
-		<input type="number" name="ent" min="1"> <br>
+		<input class="inp" type="number" name="ent" min="1"> <br>
 	No. of Columns (or tags) in the sheet: <br>
-		<input type="number" name="cols" min="1"> <br>
-	<input type="submit" value="Submit">
+		<input class="inp" type="number" name="cols" min="1"> <br>
+	<input class="btn" type="submit" value="Submit">
 </form>
 <br>
 For more info, visit: <a href="https://github.com/Shivam010/populateg">github.com/Shivam010/populateg</a>
@@ -77,16 +98,37 @@ Error: %v
 <br>
 Try Again.
 <br>
+<style type="text/css">
+	.inp{
+		width:200px;
+		padding:4px 8px;
+		margin:3px;
+		border:none;
+		border-bottom:1px solid #ffffff;
+		outline:none;
+		background:none;
+			
+	}
+	.inp:hover{
+		border-bottom:1px solid #4fb4df;
+	}
+	.btn{
+		border-radius:50px;
+		padding:5px 12px;
+		background:none;
+		border:1px solid #4fb4df;
+	}
+</style>
 <form action="/process" method="post">
 	Google Docs Template Url: <br>
-		<input type="text" name="docID"> <br>
+		<input class="inp" type="text" name="docID"> <br>
 	Google Sheets Data Url: <br>
-		<input type="text" name="sheetID"> <br>
+		<input class="inp" type="text" name="sheetID"> <br>
 	No. of Entries in Sheet, for which Doc is to generate: <br>
-		<input type="number" name="ent" min="1"> <br>
+		<input class="inp" type="number" name="ent" min="1"> <br>
 	No. of Columns (or tags) in the sheet: <br>
-		<input type="number" name="cols" min="1"> <br>
-	<input type="submit" value="Submit">
+		<input class="inp" type="number" name="cols" min="1"> <br>
+	<input class="btn" type="submit" value="Submit">
 </form>
 <br>
 For more info, visit: <a href="https://github.com/Shivam010/populateg">github.com/Shivam010/populateg</a>
