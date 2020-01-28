@@ -27,13 +27,13 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		err := GetOauthConfig(ctx, state, code)
 		if err != nil {
 			render(w, ViewData{})
-			log.Printf("oauth error: %v", err)
+			log.Println("Oauth error:", err)
 			return
 		}
 
 		per, err := GetUserInfo(ctx, client)
 		if err != nil {
-			log.Printf("could not get user info: %v", err)
+			log.Println("Could not get user info:", err)
 			render(w, ViewData{})
 			return
 		}
@@ -47,7 +47,7 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// user just completed populating a template
 	per, err := GetUserInfo(ctx, client)
 	if err != nil {
-		log.Printf("could not get user info: %v", err)
+		log.Println("Could not get user info:", err)
 		render(w, ViewData{})
 		return
 	}
@@ -71,26 +71,35 @@ func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		data := ViewData{
 			Authenticated: true,
 			Errors: []string{
-				fmt.Sprintf("failed to parse form: %v", err),
-			},
-		}
-		render(w, data)
-		return
-	}
-	if err := p.Process(); err != nil {
-		data := ViewData{
-			Authenticated: true,
-			Errors: []string{
-				fmt.Sprintf("failed to populate: %v", err),
+				fmt.Sprintf("Sorry, %v", err),
 			},
 		}
 		render(w, data)
 		return
 	}
 
+	list, err := p.Process()
+	if err != nil {
+		data := ViewData{
+			Authenticated: true,
+			Errors: []string{
+				fmt.Sprintf("Sorry, failed to populate: %v", err),
+			},
+		}
+		render(w, data)
+		return
+	}
+
+	errs := make([]string, len(list)+1)
+	for _, res := range list {
+		errs = append(errs, fmt.Sprintf("Sorry, failed to populate Document-%v: %v", res.DocNo, res.ErrorMessage))
+	}
 	data := ViewData{
 		Authenticated: true,
-		Success:       []string{"Succesfully created N documents"},
+		Success: []string{
+			fmt.Sprintf("Successfully created %v documents", int(p.Entries)-len(list)),
+		},
+		Errors: errs,
 	}
 	render(w, data)
 }
