@@ -1,49 +1,78 @@
+<!--
+MIT License
+
+Copyright © 2020 Shivam Rathore
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>populateG</title>
-  <link href="https://unpkg.com/primer/build/build.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>populateG</title>
+    <link href="https://unpkg.com/primer/build/build.css" rel="stylesheet"/>
+
 </head>
 
 <body>
-  <header class="d-flex bg-grey flex-column bg-gray-dark p-2">
-    <h1 class="text-white">PopulateG</h1>
-    <h4 class="text-white">A Plugin to populate Google Docs Templates</h4>
-  </header>
+<header class="d-flex bg-grey flex-items-center flex-column bg-gray-dark p-2"
+        style="font-family:  'Avant Garde', Avantgarde, 'Century Gothic', CenturyGothic, 'AppleGothic', sans-serif">
+    <h1 class="text-white"
+        style="font-size: 45px;border-bottom: 2px white solid;padding: 10px 10px 0;margin-bottom: 10px;">
+        POPULATE•G
+    </h1>
+    <h6 class="text-white">A PLUGIN TO POPULATE GOOGLE DOCS TEMPLATES</h6>
+</header>
 
-  {{if .Name}}
+{{if .Name}}
     <div class="flash m-3">
-    Hi {{.Name}}
+        Hi {{.Name}}
     </div>
-  {{end}}
+{{end}}
 
-  {{range $s := .Success}}
-    <div class="flash flash-success m-3">{{$s}}</div>
-  {{end}}
+<div class="d-flex flex-items-center flex-justify-center" style="height:50vh;">
 
-  {{range $e := .Errors}}
-    <div class="flash flash-error m-3">{{$e}}</div>
-  {{end}}
+    {{range $s := .Success}}
+        <div class="flash flash-success m-3">{{$s}}</div>
+    {{end}}
 
-  <div class="d-flex flex-items-center flex-justify-center" style="height:75vh;">
-    <div class="d-flex flex-column flex-items-center flex-justify-between border border-grey-dark" style="height:50vh;width:600px;">
-      <main>
-      {{if .Authenticated}}
-        {{template "form" .}}
-      {{else}}
-        <a class="btn btn-outline btn-large mt-6" href="/login" role="button">Log In</a>
-      {{end}}
-      </main>
+    {{range $e := .Errors}}
+        <div class="flash flash-error m-3">{{$e}}</div>
+    {{end}}
 
-      <footer class="p-3">
-      For more info, visit <a href="https://github.com/Shivam010/populateg">github.com/Shivam010/populateg</a>
-      </footer>
-    </div>
-  </div>
+    <main>
+        {{if .Authenticated }}
+            {{template "form" .}}
+        {{else}}
+            <div class="d-flex flex-justify-center">
+                <a class="btn btn-outline btn-large mt-6" href="/login" role="button">Log In</a>
+            </div>
+        {{end}}
+    </main>
+</div>
+
+<footer class="position-fixed border bottom-0 bg-gray p-3" style="width: 100%;font-size: small;text-align: center">
+    For more info, visit: <a href="https://github.com/Shivam010/populateg"> https://github.com/Shivam010/populateg </a>
+</footer>
 </body>
 
 </html>

@@ -1,19 +1,21 @@
 {{define "form"}}
-<form action="/process" method="post" class="mt-5">
-  <label for="google docs template URL">Google Docs Template URL</label><br>
-  <input class="form-control input-lg mb-3" type="text" name="docID" required placeholder="https://docs.google.com/..."><br>
+    <form action="/process" method="post" class="mt-5">
+        <label for="google docs template URL">Google Docs Template URL</label><br>
+        <input style="width: 400px" class="form-control input-lg mb-3" type="text" name="docID" required
+               placeholder="https://docs.google.com/document/d/1vesEWXSp1kpnGbUTDQIKIcKjWhSgM4Piy8U0N0vILN4"><br>
 
-  <label for="google sheets data URL">Google Sheets Data URL</label><br>
-  <input class="form-control input-lg mb-3" type="text" name="sheetID" required placeholder="https://docs.google.com/..."><br>
+        <label for="google sheets data URL">Google Sheets Data URL</label><br>
+        <input style="width: 400px" class="form-control input-lg mb-3" type="text" name="sheetID" required
+               placeholder="https://docs.google.com/spreadsheets/d/1Ufpb4xSH1EhuNJFO3r2LLHDpXjvdZ4fA9RcgR0KaKTQ"><br>
 
-  <label for="number of rows">No. of Entries in Sheet</label><br>
-  <input class="form-control input-lg mb-3" type="number" name="ent" min="1" required placeholder="a number"> <br>
+        <label for="number of rows">No. of Entries in Sheet</label><br>
+        <input style="width: 400px" class="form-control input-lg mb-3" type="number" name="ent" min="1" required
+               placeholder="Documents to Create"> <br>
 
-  <label for="number of columns">No. of Columns (or tags) in Sheet</label><br>
-  <input class="form-control input-lg mb-3" type="number" name="cols" min="1" required placeholder="a number"> <br>
+        <label for="number of columns">No. of Columns (or tags) in Sheet</label><br>
+        <input style="width: 400px" class="form-control input-lg mb-3" type="number" name="cols" min="1" required
+               placeholder="Tags in Template"> <br>
 
-  <div class="d-flex flex-justify-center">
-    <button class="btn btn-outline mt-2" role="button" type="submit">Submit</button>
-  </div>
-</form>
+        <button class="btn btn-outline btn-large mt-3" role="button" type="submit">Submit</button>
+    </form>
 {{end}}
