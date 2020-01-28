@@ -1,3 +1,27 @@
+/*
+MIT License
+
+Copyright © 2020 Shivam Rathore
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 package main
 
 import (
@@ -10,6 +34,7 @@ import (
 	"google.golang.org/api/sheets/v4"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -53,7 +78,7 @@ func ParseUrlToID(url string) (string, error) {
 	var reg = regexp.MustCompile(`(?m)https://docs.google.com/(document|spreadsheets)/(d|u/[0-9]*/d)/([^/]*)`)
 	x := reg.FindAllStringSubmatch(url, 4)
 	if len(x) < 1 || len(x[0]) < 4 {
-		return "", fmt.Errorf("invalid url passed")
+		return "", fmt.Errorf("invalid Url is passed")
 	}
 	return x[0][3], nil
 }
@@ -70,11 +95,11 @@ func FilPopulateObject(d, s, e, c string) (p *PopulateObject, err error) {
 	}
 	p.Columns, err = strconv.ParseInt(c, 10, 64)
 	if err != nil {
-		return
+		return p, fmt.Errorf("a number is required in column")
 	}
 	p.Entries, err = strconv.ParseInt(e, 10, 64)
 	if err != nil {
-		return
+		return p, fmt.Errorf("a number is required in entries")
 	}
 	return
 }
@@ -94,13 +119,15 @@ func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
 	}
 	srv, err := sheets.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve Sheets Service: %v", err)
+		log.Println("Unable to retrieve Sheets Service:", err)
+		return nil, fmt.Errorf("unable to retrieve Sheet: check your access")
 	}
-	c3 := fmt.Sprintf("%v%v", column(p.Columns), p.Entries)
+	c3 := fmt.Sprintf("%v%v", column(p.Columns), p.Entries+1)
 
 	res, err := srv.Spreadsheets.Values.Get(sheetID, fmt.Sprintf("A1:%v", c3)).MajorDimension("COLUMNS").Do()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get data from sheet: %v", err.Error())
+		log.Println("Unable to get data from sheet:", err)
+		return nil, fmt.Errorf("unable to read Sheet: check your access")
 	}
 	mp := make(SheetData, 0)
 	for _, r := range res.Values {
@@ -120,13 +147,15 @@ func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
 func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, error) {
 	srv, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
-		return "", fmt.Errorf("unable to retrieve Drive Service: %v", err.Error())
+		log.Println("Unable to retrieve Drive Service:", err)
+		return "", fmt.Errorf("unable to access drive: check your access")
 	}
 
 	file := &drive.File{Title: newTitle}
 	res, err := srv.Files.Copy(docID, file).Do()
 	if err != nil {
-		return "", fmt.Errorf("unable to create new copy of template: %v", err.Error())
+		log.Println("Unable to create new copy of template:", err)
+		return "", fmt.Errorf("unable to create new copy of template in drive: check your access")
 	}
 	return res.Id, nil
 }
@@ -134,7 +163,8 @@ func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, er
 func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, mp SheetData) error {
 	srv, err := docs.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
-		return fmt.Errorf("unable to retrieve Docs Service: %v", err.Error())
+		log.Println("Unable to retrieve Docs Service:", err)
+		return fmt.Errorf("unable to populate Document: check your access")
 	}
 	dsrv := docs.NewDocumentsService(srv)
 	drs := make([]*docs.Request, 0, len(mp))
@@ -157,33 +187,52 @@ func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, mp SheetData) err
 	}
 	res, err := dsrv.BatchUpdate(docID, &req).Do()
 	if err != nil {
-		return fmt.Errorf("unable to populate document: %v", err.Error())
+		log.Println("Unable to populate document:", err)
+		return fmt.Errorf("unable to populate Document: check your access")
 	}
 	if res.HTTPStatusCode == 200 {
 		return nil
 	}
+	log.Println("something went wrong. Response:", res)
 	return fmt.Errorf("something went wrong")
 }
 
-func (p *PopulateObject) Process() error {
-	p.Entries++
+type Response struct {
+	// Response For Document: DocNo,
+	// If any error occurred in creation of DocNo's Document,
+	// then the error message is returned in ErrorMessage.
+	DocNo        int64
+	ErrorMessage string
+}
+
+func (p *PopulateObject) Process() ([]Response, error) {
+
 	mp, err := p.GetSheetData(p.SheetID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tags := make([]string, 0, len(mp))
 	for t := range mp {
 		tags = append(tags, t)
 	}
-	for i := int64(0); i+1 < p.Entries; i++ {
+	res := make([]Response, 0, p.Entries)
+	for i := int64(1); i <= p.Entries; i++ {
 		newTitle := fmt.Sprintf("Doc %v", i)
 		nID, err := p.CreateNewDocInDrive(p.DocID, newTitle)
 		if err != nil {
-			return err
+			res = append(res, Response{
+				DocNo:        i,
+				ErrorMessage: err.Error(),
+			})
+			continue
 		}
 		if err = p.UpdateNewDoc(nID, i, mp); err != nil {
-			return err
+			res = append(res, Response{
+				DocNo:        i,
+				ErrorMessage: err.Error(),
+			})
+			continue
 		}
 	}
-	return err
+	return res, nil
 }
