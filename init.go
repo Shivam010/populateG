@@ -1,15 +1,17 @@
 package main
 
 import (
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/docs/v1"
-	oauth22 "google.golang.org/api/oauth2/v2"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
+	"text/template"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/docs/v1"
+	oauth22 "google.golang.org/api/oauth2/v2"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +
@@ -22,9 +24,16 @@ var (
 	client           *http.Client
 	config           *oauth2.Config
 	oauthStateString string
+	tmpl             *template.Template
 )
 
 func init() {
+	var err error
+	tmpl, err = template.ParseFiles("pages/base.gohtml", "pages/form.gohtml")
+	if err != nil {
+		log.Fatalf("failed to parse template: %v", err)
+	}
+
 	log.SetFlags(0)
 	// Randomised seed
 	seed = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -51,7 +60,7 @@ func init() {
 	}
 
 	config = &oauth2.Config{
-		RedirectURL:  "https://" + HostURL + "/home",
+		RedirectURL:  "https://" + HostURL + "/",
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
 		Scopes: []string{
