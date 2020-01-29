@@ -90,6 +90,8 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Set("Content-Type", "text/html")
+
 	p, err := FilPopulateObject(r.FormValue("docID"), r.FormValue("sheetID"), r.FormValue("ent"), r.FormValue("cols"))
 	if err != nil {
 		data := ViewData{
@@ -110,20 +112,28 @@ func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				fmt.Sprintf("Sorry, failed to populate: %v", err),
 			},
 		}
+		if err.Error() == "client expired" {
+			data.Authenticated = false
+		}
 		render(w, data)
 		return
 	}
 
-	errs := make([]string, len(list)+1)
+	docCreated := int(p.Entries) - len(list)
+	suc := []string{
+		fmt.Sprintf("Successfully created %v documents", docCreated),
+	}
+	if docCreated == 0 {
+		suc = []string{}
+	}
+	errs := make([]string, 0, len(list))
 	for _, res := range list {
 		errs = append(errs, fmt.Sprintf("Sorry, failed to populate Document-%v: %v", res.DocNo, res.ErrorMessage))
 	}
 	data := ViewData{
 		Authenticated: true,
-		Success: []string{
-			fmt.Sprintf("Successfully created %v documents", int(p.Entries)-len(list)),
-		},
-		Errors: errs,
+		Success:       suc,
+		Errors:        errs,
 	}
 	render(w, data)
 }
