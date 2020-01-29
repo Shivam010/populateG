@@ -44,20 +44,20 @@ SOFTWARE.
 </header>
 
 {{if .Name}}
-    <div class="flash m-3">
+    <div class="flash flash-success">
         Hi {{.Name}}
     </div>
 {{end}}
 
+{{range $s := .Success}}
+    <div class="flash flash-success">{{$s}}</div>
+{{end}}
+
+{{range $e := .Errors}}
+    <div class="flash flash-error">{{$e}}</div>
+{{end}}
+
 <div class="d-flex flex-items-center flex-justify-center" style="height:50vh;">
-
-    {{range $s := .Success}}
-        <div class="flash flash-success m-3">{{$s}}</div>
-    {{end}}
-
-    {{range $e := .Errors}}
-        <div class="flash flash-error m-3">{{$e}}</div>
-    {{end}}
 
     <main>
         {{if .Authenticated }}
@@ -70,7 +70,7 @@ SOFTWARE.
     </main>
 </div>
 
-<footer class="position-fixed border bottom-0 bg-gray p-3" style="width: 100%;font-size: small;text-align: center">
+<footer class="position-fixed border bottom-0 flash p-3" style="width: 100%;font-size: small;text-align: center">
     For more info, visit: <a href="https://github.com/Shivam010/populateg"> https://github.com/Shivam010/populateg </a>
 </footer>
 </body>

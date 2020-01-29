@@ -129,22 +129,25 @@ func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
 		log.Println("Unable to get data from sheet:", err)
 		return nil, fmt.Errorf("unable to read Sheet: check your access")
 	}
-	mp := make(SheetData, 0)
-	for _, r := range res.Values {
-		in := ""
-		for i, v := range r {
+	shData := make(SheetData, 0)
+	for _, values := range res.Values {
+		tag := ""
+		for i, v := range values {
 			if i == 0 {
-				in = fmt.Sprintf("%v", v)
-				mp[in] = make([]string, 0)
+				tag = fmt.Sprintf("%v", v)
+				shData[tag] = make([]string, 0)
 			} else {
-				mp[in] = append(mp[in], fmt.Sprintf("%v", v))
+				shData[tag] = append(shData[tag], fmt.Sprintf("%v", v))
 			}
 		}
 	}
-	return mp, nil
+	return shData, nil
 }
 
 func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, error) {
+	if client == nil {
+		return "", fmt.Errorf("client expired")
+	}
 	srv, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Println("Unable to retrieve Drive Service:", err)
@@ -160,27 +163,34 @@ func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, er
 	return res.Id, nil
 }
 
-func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, mp SheetData) error {
+func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, shData SheetData) error {
+	if client == nil {
+		return fmt.Errorf("client expired")
+	}
 	srv, err := docs.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Println("Unable to retrieve Docs Service:", err)
 		return fmt.Errorf("unable to populate Document: check your access")
 	}
 	dsrv := docs.NewDocumentsService(srv)
-	drs := make([]*docs.Request, 0, len(mp))
-	for k, v := range mp {
-		if len(v) <= int(ind) {
+	drs := make([]*docs.Request, 0, len(shData))
+	for tag, entries := range shData {
+		if len(entries) < int(ind) {
 			continue
 		}
 		drs = append(drs, &docs.Request{
 			ReplaceAllText: &docs.ReplaceAllTextRequest{
 				ContainsText: &docs.SubstringMatchCriteria{
 					MatchCase: false,
-					Text:      "{{" + k + "}}",
+					Text:      "{{" + tag + "}}",
 				},
-				ReplaceText: v[ind],
+				ReplaceText: entries[ind-1],
 			},
-		}, )
+		})
+	}
+	if len(drs) == 0 {
+		// Impossible case: though nothing to update
+		return nil
 	}
 	req := docs.BatchUpdateDocumentRequest{
 		Requests: drs,
@@ -207,28 +217,25 @@ type Response struct {
 
 func (p *PopulateObject) Process() ([]Response, error) {
 
-	mp, err := p.GetSheetData(p.SheetID)
+	shData, err := p.GetSheetData(p.SheetID)
 	if err != nil {
 		return nil, err
 	}
-	tags := make([]string, 0, len(mp))
-	for t := range mp {
-		tags = append(tags, t)
-	}
+
 	res := make([]Response, 0, p.Entries)
-	for i := int64(1); i <= p.Entries; i++ {
-		newTitle := fmt.Sprintf("Doc %v", i)
+	for ind := int64(1); ind <= p.Entries; ind++ {
+		newTitle := fmt.Sprintf("Doc %v", ind)
 		nID, err := p.CreateNewDocInDrive(p.DocID, newTitle)
 		if err != nil {
 			res = append(res, Response{
-				DocNo:        i,
+				DocNo:        ind,
 				ErrorMessage: err.Error(),
 			})
 			continue
 		}
-		if err = p.UpdateNewDoc(nID, i, mp); err != nil {
+		if err = p.UpdateNewDoc(nID, ind, shData); err != nil {
 			res = append(res, Response{
-				DocNo:        i,
+				DocNo:        ind,
 				ErrorMessage: err.Error(),
 			})
 			continue
