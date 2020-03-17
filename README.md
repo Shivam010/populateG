@@ -7,6 +7,10 @@ See the example of the Template Document and the Data Spreadsheet: [**here**](ht
 
 [**Try it here**](https://populateg.herokuapp.com/)
 
+> ___Note:__ As the Google Oauth client is set in a Global variable. The deployment can only process or work with __a single user at a point of time__ if multiple users are trying to use at the same time, the user arriving at the last will only be able to use the service, others will get the error as the deployment now has the Google drive access for the last user's account._
+>
+> _And as the project was just meant to solve my simple problem of rendering template using sheet's data, I never changed it. __It's just one of my problem-solving experiments.___
+
 ## Sample Example
 ![How to use populateG](images/populateg.gif)
 
