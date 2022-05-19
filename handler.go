@@ -25,10 +25,8 @@ SOFTWARE.
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 )
@@ -39,13 +37,10 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	state := r.FormValue("state")
 	code := r.FormValue("code")
 	data := ViewData{}
-	var token *oauth2.Token
-	if cookie, _ := r.Cookie("token"); cookie != nil {
-		token, _ = ParseToken(cookie.Value)
-	}
+	token, _ := ParseToken(r)
 
 	// user is not logged in
-	if r.Method == http.MethodGet && ((state == "" && code == "") || token == nil) {
+	if r.Method == http.MethodGet && state == "" && code == "" && token == nil {
 		render(w, data)
 		return
 	}
@@ -62,14 +57,7 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			return
 		}
 	}
-	val, _ := json.Marshal(token)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    string(val),
-		Domain:   HostURL,
-		HttpOnly: true,
-		Secure:   HostURL != "localhost:"+PORT,
-	})
+	SaveToken(w, token)
 
 	client := config.Client(ctx, token)
 	per, err := GetUserInfo(ctx, client)
@@ -94,15 +82,12 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/html")
-	var token *oauth2.Token
-	if cookie, _ := r.Cookie("token"); cookie != nil {
-		token, _ = ParseToken(cookie.Value)
-	}
-	if token == nil {
+	token, err := ParseToken(r)
+	if token == nil || err != nil {
 		data := ViewData{
-			Authenticated: true,
 			Errors: []string{
-				fmt.Sprintf("Client token expired redirecting to login page"),
+				fmt.Sprintf("Client token expired redirected to login page"),
+				fmt.Sprintf("%v", err),
 			},
 		}
 		render(w, data)

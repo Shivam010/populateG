@@ -26,7 +26,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/docs/v1"
@@ -40,6 +39,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 type SheetData map[string][]string
@@ -55,13 +55,68 @@ func GetOauthConfig(ctx context.Context, state, code string) (*oauth2.Token, err
 	return token, nil
 }
 
-func ParseToken(value string) (*oauth2.Token, error) {
+func ParseToken(r *http.Request) (*oauth2.Token, error) {
 	token := &oauth2.Token{}
-	err := json.Unmarshal([]byte(value), &token)
+	ck, err := r.Cookie("accessToken")
 	if err != nil {
 		return nil, err
 	}
+	token.AccessToken = ck.Value
+	ck, err = r.Cookie("refreshToken")
+	if err != nil {
+		return nil, err
+	}
+	token.RefreshToken = ck.Value
+	ck, err = r.Cookie("tokenType")
+	if err != nil {
+		return nil, err
+	}
+	token.TokenType = ck.Value
+	ck, err = r.Cookie("expiry")
+	if err != nil {
+		return nil, err
+	}
+	expiry, err := time.Parse(time.RFC3339, ck.Value)
+	if err != nil {
+		return nil, err
+	}
+	token.Expiry = expiry
 	return token, nil
+}
+
+func SaveToken(w http.ResponseWriter, token *oauth2.Token) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "accessToken",
+		Value:    token.AccessToken,
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    token.RefreshToken,
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "tokenType",
+		Value:    token.TokenType,
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "expiry",
+		Value:    token.Expiry.Format(time.RFC3339),
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
 }
 
 func GetUserInfo(ctx context.Context, client *http.Client) (*Person, error) {
@@ -235,6 +290,11 @@ func (p *PopulateObject) Process(client *http.Client) ([]Response, error) {
 	res := make([]Response, 0, p.Entries)
 	for ind := int64(1); ind <= p.Entries; ind++ {
 		newTitle := fmt.Sprintf("Doc %v", ind)
+		if fileNames, ok := shData["fileName"]; ok {
+			if len(fileNames) >= int(ind) {
+				newTitle = fileNames[ind-1]
+			}
+		}
 		nID, err := p.CreateNewDocInDrive(client, p.DocID, newTitle)
 		if err != nil {
 			res = append(res, Response{
