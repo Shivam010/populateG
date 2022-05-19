@@ -37,9 +37,10 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	state := r.FormValue("state")
 	code := r.FormValue("code")
 	data := ViewData{}
+	token, _ := ParseToken(r)
 
 	// user is not logged in
-	if r.Method == http.MethodGet && state == "" && code == "" {
+	if r.Method == http.MethodGet && state == "" && code == "" && token == nil {
 		render(w, data)
 		return
 	}
@@ -47,28 +48,18 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
 	// user just got redirected from logging in
-	if client == nil {
-		err := GetOauthConfig(ctx, state, code)
+	if token == nil {
+		var err error
+		token, err = GetOauthConfig(ctx, state, code)
 		if err != nil {
 			render(w, ViewData{})
 			log.Println("Oauth error:", err)
 			return
 		}
-
-		per, err := GetUserInfo(ctx, client)
-		if err != nil {
-			log.Println("Could not get user info:", err)
-			render(w, ViewData{})
-			return
-		}
-
-		data.Name = per.Name
-		data.Authenticated = true
-		render(w, data)
-		return
 	}
+	SaveToken(w, token)
 
-	// user just completed populating a template
+	client := config.Client(ctx, token)
 	per, err := GetUserInfo(ctx, client)
 	if err != nil {
 		log.Println("Could not get user info:", err)
@@ -91,7 +82,17 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/html")
-
+	token, err := ParseToken(r)
+	if token == nil || err != nil {
+		data := ViewData{
+			Errors: []string{
+				fmt.Sprintf("Client token expired redirected to login page"),
+				fmt.Sprintf("%v", err),
+			},
+		}
+		render(w, data)
+		return
+	}
 	p, err := FilPopulateObject(r.FormValue("docID"), r.FormValue("sheetID"), r.FormValue("ent"), r.FormValue("cols"))
 	if err != nil {
 		data := ViewData{
@@ -104,7 +105,8 @@ func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	list, err := p.Process()
+	client := config.Client(r.Context(), token)
+	list, err := p.Process(client)
 	if err != nil {
 		data := ViewData{
 			Authenticated: true,

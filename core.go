@@ -27,6 +27,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v2"
 	"google.golang.org/api/option"
@@ -38,20 +39,84 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 type SheetData map[string][]string
 
-func GetOauthConfig(ctx context.Context, state, code string) error {
+func GetOauthConfig(ctx context.Context, state, code string) (*oauth2.Token, error) {
 	if state != oauthStateString {
-		return fmt.Errorf("invalid oauth state")
+		return nil, fmt.Errorf("invalid oauth state")
 	}
 	token, err := config.Exchange(ctx, code)
 	if err != nil {
-		return fmt.Errorf("code exchange failed: %s", err.Error())
+		return nil, fmt.Errorf("code exchange failed: %s", err.Error())
 	}
-	client = config.Client(ctx, token)
-	return nil
+	return token, nil
+}
+
+func ParseToken(r *http.Request) (*oauth2.Token, error) {
+	token := &oauth2.Token{}
+	ck, err := r.Cookie("accessToken")
+	if err != nil {
+		return nil, err
+	}
+	token.AccessToken = ck.Value
+	ck, err = r.Cookie("refreshToken")
+	if err != nil {
+		return nil, err
+	}
+	token.RefreshToken = ck.Value
+	ck, err = r.Cookie("tokenType")
+	if err != nil {
+		return nil, err
+	}
+	token.TokenType = ck.Value
+	ck, err = r.Cookie("expiry")
+	if err != nil {
+		return nil, err
+	}
+	expiry, err := time.Parse(time.RFC3339, ck.Value)
+	if err != nil {
+		return nil, err
+	}
+	token.Expiry = expiry
+	return token, nil
+}
+
+func SaveToken(w http.ResponseWriter, token *oauth2.Token) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "accessToken",
+		Value:    token.AccessToken,
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    token.RefreshToken,
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "tokenType",
+		Value:    token.TokenType,
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "expiry",
+		Value:    token.Expiry.Format(time.RFC3339),
+		Expires:  token.Expiry,
+		Secure:   HostURL != "localhost:"+PORT,
+		HttpOnly: true,
+		Domain:   HostURL,
+	})
 }
 
 func GetUserInfo(ctx context.Context, client *http.Client) (*Person, error) {
@@ -113,7 +178,7 @@ func column(i int64) string {
 	return c
 }
 
-func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
+func (p *PopulateObject) GetSheetData(client *http.Client, sheetID string) (SheetData, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client expired")
 	}
@@ -144,7 +209,7 @@ func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
 	return shData, nil
 }
 
-func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, error) {
+func (p *PopulateObject) CreateNewDocInDrive(client *http.Client, docID, newTitle string) (string, error) {
 	if client == nil {
 		return "", fmt.Errorf("client expired")
 	}
@@ -163,7 +228,7 @@ func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, er
 	return res.Id, nil
 }
 
-func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, shData SheetData) error {
+func (p *PopulateObject) UpdateNewDoc(client *http.Client, docID string, ind int64, shData SheetData) error {
 	if client == nil {
 		return fmt.Errorf("client expired")
 	}
@@ -215,9 +280,9 @@ type Response struct {
 	ErrorMessage string
 }
 
-func (p *PopulateObject) Process() ([]Response, error) {
+func (p *PopulateObject) Process(client *http.Client) ([]Response, error) {
 
-	shData, err := p.GetSheetData(p.SheetID)
+	shData, err := p.GetSheetData(client, p.SheetID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +290,12 @@ func (p *PopulateObject) Process() ([]Response, error) {
 	res := make([]Response, 0, p.Entries)
 	for ind := int64(1); ind <= p.Entries; ind++ {
 		newTitle := fmt.Sprintf("Doc %v", ind)
-		nID, err := p.CreateNewDocInDrive(p.DocID, newTitle)
+		if fileNames, ok := shData["fileName"]; ok {
+			if len(fileNames) >= int(ind) {
+				newTitle = fileNames[ind-1]
+			}
+		}
+		nID, err := p.CreateNewDocInDrive(client, p.DocID, newTitle)
 		if err != nil {
 			res = append(res, Response{
 				DocNo:        ind,
@@ -233,7 +303,7 @@ func (p *PopulateObject) Process() ([]Response, error) {
 			})
 			continue
 		}
-		if err = p.UpdateNewDoc(nID, ind, shData); err != nil {
+		if err = p.UpdateNewDoc(client, nID, ind, shData); err != nil {
 			res = append(res, Response{
 				DocNo:        ind,
 				ErrorMessage: err.Error(),
