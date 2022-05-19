@@ -27,7 +27,6 @@ package main
 import (
 	"log"
 	"math/rand"
-	"net/http"
 	"os"
 	"text/template"
 	"time"
@@ -45,7 +44,6 @@ var (
 	HostURL, PORT string
 
 	seed             *rand.Rand
-	client           *http.Client
 	config           *oauth2.Config
 	oauthStateString string
 	tmpl             *template.Template

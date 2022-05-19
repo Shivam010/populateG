@@ -26,7 +26,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v2"
 	"google.golang.org/api/option"
@@ -42,16 +44,24 @@ import (
 
 type SheetData map[string][]string
 
-func GetOauthConfig(ctx context.Context, state, code string) error {
+func GetOauthConfig(ctx context.Context, state, code string) (*oauth2.Token, error) {
 	if state != oauthStateString {
-		return fmt.Errorf("invalid oauth state")
+		return nil, fmt.Errorf("invalid oauth state")
 	}
 	token, err := config.Exchange(ctx, code)
 	if err != nil {
-		return fmt.Errorf("code exchange failed: %s", err.Error())
+		return nil, fmt.Errorf("code exchange failed: %s", err.Error())
 	}
-	client = config.Client(ctx, token)
-	return nil
+	return token, nil
+}
+
+func ParseToken(value string) (*oauth2.Token, error) {
+	token := &oauth2.Token{}
+	err := json.Unmarshal([]byte(value), &token)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
 }
 
 func GetUserInfo(ctx context.Context, client *http.Client) (*Person, error) {
@@ -113,7 +123,7 @@ func column(i int64) string {
 	return c
 }
 
-func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
+func (p *PopulateObject) GetSheetData(client *http.Client, sheetID string) (SheetData, error) {
 	if client == nil {
 		return nil, fmt.Errorf("client expired")
 	}
@@ -144,7 +154,7 @@ func (p *PopulateObject) GetSheetData(sheetID string) (SheetData, error) {
 	return shData, nil
 }
 
-func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, error) {
+func (p *PopulateObject) CreateNewDocInDrive(client *http.Client, docID, newTitle string) (string, error) {
 	if client == nil {
 		return "", fmt.Errorf("client expired")
 	}
@@ -163,7 +173,7 @@ func (p *PopulateObject) CreateNewDocInDrive(docID, newTitle string) (string, er
 	return res.Id, nil
 }
 
-func (p *PopulateObject) UpdateNewDoc(docID string, ind int64, shData SheetData) error {
+func (p *PopulateObject) UpdateNewDoc(client *http.Client, docID string, ind int64, shData SheetData) error {
 	if client == nil {
 		return fmt.Errorf("client expired")
 	}
@@ -215,9 +225,9 @@ type Response struct {
 	ErrorMessage string
 }
 
-func (p *PopulateObject) Process() ([]Response, error) {
+func (p *PopulateObject) Process(client *http.Client) ([]Response, error) {
 
-	shData, err := p.GetSheetData(p.SheetID)
+	shData, err := p.GetSheetData(client, p.SheetID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +235,7 @@ func (p *PopulateObject) Process() ([]Response, error) {
 	res := make([]Response, 0, p.Entries)
 	for ind := int64(1); ind <= p.Entries; ind++ {
 		newTitle := fmt.Sprintf("Doc %v", ind)
-		nID, err := p.CreateNewDocInDrive(p.DocID, newTitle)
+		nID, err := p.CreateNewDocInDrive(client, p.DocID, newTitle)
 		if err != nil {
 			res = append(res, Response{
 				DocNo:        ind,
@@ -233,7 +243,7 @@ func (p *PopulateObject) Process() ([]Response, error) {
 			})
 			continue
 		}
-		if err = p.UpdateNewDoc(nID, ind, shData); err != nil {
+		if err = p.UpdateNewDoc(client, nID, ind, shData); err != nil {
 			res = append(res, Response{
 				DocNo:        ind,
 				ErrorMessage: err.Error(),

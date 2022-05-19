@@ -25,8 +25,10 @@ SOFTWARE.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 )
@@ -37,9 +39,13 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	state := r.FormValue("state")
 	code := r.FormValue("code")
 	data := ViewData{}
+	var token *oauth2.Token
+	if cookie, _ := r.Cookie("token"); cookie != nil {
+		token, _ = ParseToken(cookie.Value)
+	}
 
 	// user is not logged in
-	if r.Method == http.MethodGet && state == "" && code == "" {
+	if r.Method == http.MethodGet && ((state == "" && code == "") || token == nil) {
 		render(w, data)
 		return
 	}
@@ -47,28 +53,25 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
 	// user just got redirected from logging in
-	if client == nil {
-		err := GetOauthConfig(ctx, state, code)
+	if token == nil {
+		var err error
+		token, err = GetOauthConfig(ctx, state, code)
 		if err != nil {
 			render(w, ViewData{})
 			log.Println("Oauth error:", err)
 			return
 		}
-
-		per, err := GetUserInfo(ctx, client)
-		if err != nil {
-			log.Println("Could not get user info:", err)
-			render(w, ViewData{})
-			return
-		}
-
-		data.Name = per.Name
-		data.Authenticated = true
-		render(w, data)
-		return
 	}
+	val, _ := json.Marshal(token)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    string(val),
+		Domain:   HostURL,
+		HttpOnly: true,
+		Secure:   HostURL != "localhost:"+PORT,
+	})
 
-	// user just completed populating a template
+	client := config.Client(ctx, token)
 	per, err := GetUserInfo(ctx, client)
 	if err != nil {
 		log.Println("Could not get user info:", err)
@@ -91,7 +94,20 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/html")
-
+	var token *oauth2.Token
+	if cookie, _ := r.Cookie("token"); cookie != nil {
+		token, _ = ParseToken(cookie.Value)
+	}
+	if token == nil {
+		data := ViewData{
+			Authenticated: true,
+			Errors: []string{
+				fmt.Sprintf("Client token expired redirecting to login page"),
+			},
+		}
+		render(w, data)
+		return
+	}
 	p, err := FilPopulateObject(r.FormValue("docID"), r.FormValue("sheetID"), r.FormValue("ent"), r.FormValue("cols"))
 	if err != nil {
 		data := ViewData{
@@ -104,7 +120,8 @@ func Process(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	list, err := p.Process()
+	client := config.Client(r.Context(), token)
+	list, err := p.Process(client)
 	if err != nil {
 		data := ViewData{
 			Authenticated: true,
